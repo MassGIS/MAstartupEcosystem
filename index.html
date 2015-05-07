@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html class="ocks-org do-not-copy">
+<meta charset="utf-8">
+<head>
+<title>Mass Startup Ecosystem Network</title>
+</head>
+
+<style>
+
+@import url(style.css);
+
+.background {
+  fill: #f1f3f4;
+}
+
+line {
+  stroke: #fff;
+}
+
+text.active {
+  fill: #292421;
+  font-weight: 900;
+}
+
+rect.cell:hover{
+  fill-opacity: 0.5 !important;
+  -moz-transition: all 0.3s;
+  -o-transition: all 0.3s;
+  -webkit-transition: all 0.3s;
+  transition: all 0.3s;
+}
+
+</style>
+  <body>
+<script src="http://d3js.org/d3.v2.min.js?2.8.1"></script>
+
+<header>
+  May 6, 2015
+</header>
+
+<h1>Mass Startup Ecosystem Matrix</h1>
+
+<aside style="margin-top:80px;">
+<p>Order: <select id="order">
+  <option value="name">by Name</option>
+  <option value="count">by Frequency</option>
+  <option value="group">by Cluster</option>
+</select>
+
+<p>This matrix diagram visualizes civic tech ecosystem company and institution co-occurence</a></i>.
+
+<p>Each colored cell represents two companies that focus on the same fields.
+
+<p>Use the drop-down menu to reorder the matrix and explore the data.
+
+<p>Built with <a href="http://d3js.org/">d3.js</a>.
+
+<p>
+  <svg width="13" height="13">
+    <rect width="13" height="13" style="fill:rgb(158, 202, 225); padding-right:10em;" />
+  </svg>
+  Group 1: Clean Energy
+</p>
+
+<p>
+  <svg width="13" height="13">
+    <rect width="13" height="13" style="fill:rgb(107, 174, 214); padding-right:10em;" />
+  </svg>
+  Group 2: General/Other
+</p>
+
+<p>
+  <svg width="13" height="13">
+    <rect width="13" height="13" style="fill:rgb(198, 219, 239); padding-right:10em;" />
+  </svg>
+  Group 3: Incubators/Space Providers
+</p>
+
+<p>
+  <svg width="13" height="13">
+    <rect width="13" height="13" style="fill:rgb(230, 85, 13); padding-right:10em;" />
+  </svg>
+  Group 4: Life Science
+</p>
+
+<p>
+  <svg width="13" height="13">
+    <rect width="13" height="13" style="fill:rgb(253, 141, 60); padding-right:10em;" />
+  </svg>
+  Group 5: Investor Groups
+</p>
+
+<p>
+  <svg width="13" height="13">
+    <rect width="13" height="13" style="fill:rgb(253, 174, 107); padding-right:10em;" />
+  </svg>
+  Group 6: Schools/Students
+</p>
+
+<p><svg width="13" height="13">
+    <rect width="13" height="13" style="fill:rgb(253, 208, 162); padding-right:10em;" />
+  </svg>
+  Group 7: Women 
+</p>
+
+</aside>
+
+<script>
+
+var margin = {top: 300, right: 0, bottom: 10, left: 300},
+    width = 600,
+    height = 600;
+
+var x = d3.scale.ordinal().rangeBands([0, width]),
+    z = d3.scale.linear().domain([0, 4]).clamp(true),
+    c = d3.scale.category20c().domain(d3.range(10));
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .style("margin-left", -margin.left + "px")
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+d3.json("data.json", function(miserables) {
+  var matrix = [],
+      nodes = miserables.nodes,
+      n = nodes.length;
+
+  // Compute index per node.
+  nodes.forEach(function(node, i) {
+    node.index = i;
+    node.count = 0;
+    matrix[i] = d3.range(n).map(function(j) { return {x: j, y: i, z: 0}; });
+  });
+
+  // Convert links to matrix; count character occurrences.
+  miserables.links.forEach(function(link) {
+    matrix[link.source][link.target].z += link.value;
+    matrix[link.target][link.source].z += link.value;
+    matrix[link.source][link.source].z += link.value;
+    matrix[link.target][link.target].z += link.value;
+    nodes[link.source].count += link.value;
+    nodes[link.target].count += link.value;
+  });
+
+  // Precompute the orders.
+  var orders = {
+    name: d3.range(n).sort(function(a, b) { return d3.ascending(nodes[a].name, nodes[b].name); }),
+    count: d3.range(n).sort(function(a, b) { return nodes[b].count - nodes[a].count; }),
+    group: d3.range(n).sort(function(a, b) { return nodes[b].group - nodes[a].group; })
+  };
+
+  // The default sort order.
+  x.domain(orders.name);
+
+  svg.append("rect")
+      .attr("class", "background")
+      .attr("width", width)
+      .attr("height", height);
+
+  var row = svg.selectAll(".row")
+      .data(matrix)
+    .enter().append("g")
+      .attr("class", "row")
+      .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
+      .each(row);
+
+  row.append("line")
+      .attr("x2", width);
+
+  row.append("text")
+      .attr("x", -6)
+      .attr("y", x.rangeBand() / 2)
+      .attr("dy", ".32em")
+      .attr("text-anchor", "end")
+      .text(function(d, i) { return nodes[i].name; });
+
+  var column = svg.selectAll(".column")
+      .data(matrix)
+    .enter().append("g")
+      .attr("class", "column")
+      .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
+
+  column.append("line")
+      .attr("x1", -width);
+
+  column.append("text")
+      .attr("x", 6)
+      .attr("y", x.rangeBand() / 2)
+      .attr("dy", ".32em")
+      .attr("text-anchor", "start")
+      .text(function(d, i) { return nodes[i].name; });
+
+  function row(row) {
+
+    var cell = d3.select(this).selectAll(".cell")
+        .data(row.filter(function(d) { return d.z; }))
+        .enter().append("rect")
+        .attr("class", "cell")
+        .attr("x", function(d) { return x(d.x); })
+        .attr("width", x.rangeBand())
+        .attr("height", x.rangeBand())
+        .style("fill-opacity", function(d) { return z(d.z); })
+        .style("fill", function(d) { return nodes[d.x].group == nodes[d.y].group ? c(nodes[d.x].group) : null; })
+        .on("mouseover", mouseover)
+        .on("mouseout", mouseout)
+        .append("title")
+        .attr("id", "tooltip")
+        .text(function(d, i) {
+          return nodes[d.x].name + " (group " + nodes[d.x].group + "), " + nodes[d.y].name + " (group " + nodes[d.y].group + ")" +" testing on some data points: " + nodes[d.y].details;
+        });
+  }
+
+  function mouseover(p) {
+    d3.selectAll(".row text").classed("active", function(d, i) { return i == p.y; });
+    d3.selectAll(".column text").classed("active", function(d, i) { return i == p.x; });
+  }
+
+  function mouseout() {
+    d3.selectAll("text").classed("active", false);
+  }
+
+  d3.select("#order").on("change", function() {
+    clearTimeout(timeout);
+    order(this.value);
+  });
+
+  function order(value) {
+    x.domain(orders[value]);
+
+    var t = svg.transition().duration(2000);
+
+    t.selectAll(".row")
+        .delay(function(d, i) { return x(i) * 4; })
+        .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
+      .selectAll(".cell")
+        .delay(function(d) { return x(d.x) * 4; })
+        .attr("x", function(d) { return x(d.x); });
+
+    t.selectAll(".column")
+        .delay(function(d, i) { return x(i) * 4; })
+        .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
+  }
+
+  var timeout = setTimeout(function() {
+    order("group");
+    d3.select("#order").property("selectedIndex", 2).node().focus();
+  }, 5000);
+});
+
+</script>
+
+</body>
+
+<footer>
+  Adapted from <a href="http://bost.ocks.org/mike/miserables/">Mike Bostocks Les Mis Matrix </a>
+  / May 06, 2015
+</footer>
